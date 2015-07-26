@@ -1,0 +1,70 @@
+plugins {
+    id 'java' // or 'groovy' Must be explicitly applied
+    id 'com.github.johnrengelman.shadow' version '1.2.2'
+}
+
+subprojects {
+    apply plugin: 'java'
+
+    group = 'org.sample'
+    version = '1.0'
+
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        testCompile "junit:junit:4.11"
+    }
+}
+
+project(':client') {
+    dependencies {
+        compile 'io.netty:netty-all:4.0.30.Final'
+        compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.3'
+        compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.3'
+    }
+
+    jar {
+        //from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+        manifest {
+            attributes 'Main-Class': 'Client'
+        }
+    }
+
+    task copyDeps(type: Copy) {
+        from configurations.runtime
+        into "${buildDir}/deps"
+    }
+}
+
+project(':server') {
+    dependencies {
+        compile 'io.netty:netty-all:4.0.30.Final'
+        compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.3'
+        compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.3'
+    }
+
+    jar {
+        //from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+        manifest {
+            attributes 'Main-Class': 'Server'
+        }
+    }
+
+    task copyDeps(type: Copy) {
+        from configurations.runtime
+        into "${buildDir}/deps"
+    }
+}
+
+task copyJars(type: Copy, dependsOn: subprojects.jar) {
+    from(subprojects.jar)
+    into project.file('dest')
+}
+
+task copyDeps(type: Copy) {
+    from(subprojects.configurations.runtime)
+    into project.file('dest/lib')
+}
+
+task copyFiles(dependsOn: [copyJars, copyDeps])
